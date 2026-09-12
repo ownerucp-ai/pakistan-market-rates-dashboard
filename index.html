@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pakistan Daily Rates & Financial Utility Dashboard</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            pk: {
+              DEFAULT: '#006633',
+              dark: '#004d26',
+              light: '#008040',
+              accent: '#d4af37'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar and Ticker Animation */
+    @keyframes marquee {
+      0% { transform: translateX(0%); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+      display: inline-flex;
+      white-space: nowrap;
+      animation: marquee 25s linear infinite;
+    }
+    .animate-marquee:hover {
+      animation-play-state: paused;
+    }
+    .ad-placeholder {
+      background-image: repeating-linear-gradient(45deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 10px, transparent 10px, transparent 20px);
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 text-gray-800 dark:text-gray-100 font-sans min-h-screen flex flex-col transition-colors duration-200">
+
+  <!-- Top Live Rate Ticker -->
+  <div class="bg-pk-dark text-white text-xs py-2 overflow-hidden border-b border-pk-light relative z-20">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between">
+      <div class="flex items-center gap-2 font-semibold shrink-0 bg-pk-dark pr-3 z-10">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>LIVE MARKET TICKER:</span>
+      </div>
+      <div class="overflow-hidden w-full relative">
+        <div class="animate-marquee flex items-center gap-8 text-slate-200" id="ticker-content">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="bg-white dark:bg-slate-800 shadow-sm border-b border-gray-200 dark:border-slate-700 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-pk text-white flex items-center justify-center font-bold text-xl shadow-md">
+          🇵🇰
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold text-pk dark:text-emerald-400 tracking-tight leading-none">
+            PakDaily<span class="text-amber-500">Rates</span>
+          </h1>
+          <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">Daily Pakistan Financial & Commodity Dashboard</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button id="theme-toggle" class="p-2.5 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600 transition">
+          <i class="fa-solid fa-moon dark:hidden"></i>
+          <i class="fa-solid fa-sun hidden dark:inline"></i>
+        </button>
+        <span class="hidden sm:inline-flex text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2.5 py-1 rounded-full font-medium items-center gap-1">
+          <i class="fa-solid fa-clock"></i> <span id="current-date">Sep 2026</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Top AdSense Banner Placeholder -->
+  <div class="max-w-7xl mx-auto px-4 mt-4 w-full">
+    <div class="ad-placeholder w-full h-20 md:h-24 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 text-xs text-center p-2">
+      <span class="font-semibold text-gray-500 dark:text-slate-400">ADVERTISEMENT (728x90)</span>
+      <span>Google AdSense Header Banner Slot</span>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+    <!-- Navigation Tabs -->
+    <div class="flex overflow-x-auto gap-2 pb-2 mb-6 border-b border-gray-200 dark:border-slate-700 no-scrollbar">
+      <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-btn active px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap bg-pk text-white shadow-sm transition">
+        <i class="fa-solid fa-chart-line"></i> Market Rates
+      </button>
+      <button onclick="switchTab('gold-calc')" id="tab-gold-calc" class="tab-btn px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 transition">
+        <i class="fa-solid fa-scale-balanced text-amber-500"></i> Gold Calculator
+      </button>
+      <button onclick="switchTab('fuel-calc')" id="tab-fuel-calc" class="tab-btn px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 transition">
+        <i class="fa-solid fa-gas-pump text-blue-500"></i> Fuel & Trip Calc
+      </button>
+      <button onclick="switchTab('forex-calc')" id="tab-forex-calc" class="tab-btn px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 transition">
+        <i class="fa-solid fa-money-bill-transfer text-emerald-500"></i> Forex Currency
+      </button>
+      <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-4 py-2.5 rounded-lg font-medium text-sm flex items-center gap-2 whitespace-nowrap bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 border border-gray-200 dark:border-slate-700 transition">
+        <i class="fa-solid fa-sliders text-purple-500"></i> Update Rates
+      </button>
+    </div>
+
+    <!-- TAB 1: DASHBOARD / MARKET RATES -->
+    <div id="content-dashboard" class="tab-content space-y-6">
+
+      <!-- Action Bar -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 gap-3">
+        <div>
+          <h2 class="text-lg font-bold text-gray-800 dark:text-white">Today's Market Rates Summary</h2>
+          <p class="text-xs text-gray-500 dark:text-gray-400">Official Sarafa Bazaar, OGRA & Poultry Association benchmarks</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="refreshRatesData()" class="px-3 py-1.5 bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 text-gray-700 dark:text-gray-200 text-xs font-semibold rounded-lg flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-rotate-right"></i> Refresh Rates
+          </button>
+        </div>
+      </div>
+
+      <!-- Category Grids -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Petrol Rates Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="p-2 bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg text-lg">
+                <i class="fa-solid fa-gas-pump"></i>
+              </span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">OGRA Rates</span>
+            </div>
+            <h3 class="font-bold text-gray-800 dark:text-white text-base mb-1">Fuel & Petroleum</h3>
+            <p class="text-xs text-gray-500 mb-4">Official Per Litre Rates in Pakistan</p>
+
+            <div class="space-y-2.5 text-sm">
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">Petrol (Super)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-petrol">PKR 279.50</span>
+              </div>
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">High-Speed Diesel</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-diesel">PKR 285.20</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600 dark:text-gray-400">Light Diesel / Kerosene</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-kerosene">PKR 175.00</span>
+              </div>
+            </div>
+          </div>
+          <a onclick="switchTab('fuel-calc')" class="mt-4 text-xs font-semibold text-pk hover:underline inline-flex items-center gap-1 cursor-pointer">
+            Calculate Trip Expense <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+
+        <!-- Gold Rates Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="p-2 bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-lg text-lg">
+                <i class="fa-solid fa-coins"></i>
+              </span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">Sarafa Association</span>
+            </div>
+            <h3 class="font-bold text-gray-800 dark:text-white text-base mb-1">Gold & Bullion</h3>
+            <p class="text-xs text-gray-500 mb-4">24K / 22K Gold Rates Today</p>
+
+            <div class="space-y-2.5 text-sm">
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">Gold 24K (Per Tola)</span>
+                <span class="font-bold text-amber-600 dark:text-amber-400" id="rate-gold-24tola">PKR 285,500</span>
+              </div>
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">Gold 24K (10 Grams)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-gold-2410g">PKR 244,770</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600 dark:text-gray-400">Gold 22K (Per Tola)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-gold-22tola">PKR 261,700</span>
+              </div>
+            </div>
+          </div>
+          <a onclick="switchTab('gold-calc')" class="mt-4 text-xs font-semibold text-amber-600 hover:underline inline-flex items-center gap-1 cursor-pointer">
+            Calculate Jewelry Price <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+
+        <!-- Poultry & Food Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="p-2 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 rounded-lg text-lg">
+                <i class="fa-solid fa-drumstick-bite"></i>
+              </span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300">Poultry Market</span>
+            </div>
+            <h3 class="font-bold text-gray-800 dark:text-white text-base mb-1">Chicken & Eggs</h3>
+            <p class="text-xs text-gray-500 mb-4">Daily Retail Market Rates</p>
+
+            <div class="space-y-2.5 text-sm">
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">Broiler Meat (Per KG)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-chicken">PKR 495.00</span>
+              </div>
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">Live Farm Chicken (KG)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-chicken-live">PKR 340.00</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600 dark:text-gray-400">Farm Eggs (Per Dozen)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-eggs">PKR 290.00</span>
+              </div>
+            </div>
+          </div>
+          <span class="mt-4 text-xs text-gray-400">Updated daily at 8:00 AM PKT</span>
+        </div>
+
+        <!-- Forex & Foreign Exchange Card -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-gray-200 dark:border-slate-700 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <span class="p-2 bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-lg text-lg">
+                <i class="fa-solid fa-dollar-sign"></i>
+              </span>
+              <span class="text-xs font-semibold px-2 py-0.5 rounded bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">Open Market</span>
+            </div>
+            <h3 class="font-bold text-gray-800 dark:text-white text-base mb-1">Currency Forex</h3>
+            <p class="text-xs text-gray-500 mb-4">Interbank / Open Market Rates</p>
+
+            <div class="space-y-2.5 text-sm">
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">1 USD to PKR</span>
+                <span class="font-bold text-emerald-600 dark:text-emerald-400" id="rate-usd">PKR 278.60</span>
+              </div>
+              <div class="flex justify-between items-center pb-2 border-b border-gray-100 dark:border-slate-700">
+                <span class="text-gray-600 dark:text-gray-400">1 Saudi Riyal (SAR)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-sar">PKR 74.25</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-gray-600 dark:text-gray-400">1 UAE Dirham (AED)</span>
+                <span class="font-bold text-gray-900 dark:text-white" id="rate-aed">PKR 75.85</span>
+              </div>
+            </div>
+          </div>
+          <a onclick="switchTab('forex-calc')" class="mt-4 text-xs font-semibold text-emerald-600 hover:underline inline-flex items-center gap-1 cursor-pointer">
+            Open Currency Converter <i class="fa-solid fa-arrow-right"></i>
+          </a>
+        </div>
+
+      </div>
+
+      <!-- Secondary Rates Table -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 overflow-hidden">
+        <div class="p-4 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between">
+          <h3 class="font-bold text-gray-800 dark:text-white text-base">Comprehensive Market Price Directory</h3>
+          <span class="text-xs text-gray-500">Live Simulated Data</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead class="bg-gray-50 dark:bg-slate-700 text-xs text-gray-500 dark:text-gray-300 uppercase font-semibold">
+              <tr>
+                <th class="px-4 py-3">Item / Commodity</th>
+                <th class="px-4 py-3">Category</th>
+                <th class="px-4 py-3">Unit Benchmark</th>
+                <th class="px-4 py-3">Today Rate (PKR)</th>
+                <th class="px-4 py-3">Trend</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100 dark:divide-slate-700 text-gray-700 dark:text-gray-200">
+              <tr>
+                <td class="px-4 py-3 font-semibold">24K Gold Tola</td>
+                <td class="px-4 py-3 text-xs"><span class="bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 px-2 py-0.5 rounded">Precious Metal</span></td>
+                <td class="px-4 py-3 text-xs">1 Tola (11.66 Grams)</td>
+                <td class="px-4 py-3 font-bold text-amber-600 dark:text-amber-400" id="tbl-gold-tola">285,500 PKR</td>
+                <td class="px-4 py-3 text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-caret-up"></i> Stable</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-semibold">Silver (Chandi) Tola</td>
+                <td class="px-4 py-3 text-xs"><span class="bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300 px-2 py-0.5 rounded">Precious Metal</span></td>
+                <td class="px-4 py-3 text-xs">1 Tola (11.66 Grams)</td>
+                <td class="px-4 py-3 font-bold" id="tbl-silver-tola">3,350 PKR</td>
+                <td class="px-4 py-3 text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-caret-up"></i> Stable</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-semibold">Euro (EUR)</td>
+                <td class="px-4 py-3 text-xs"><span class="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 px-2 py-0.5 rounded">Forex</span></td>
+                <td class="px-4 py-3 text-xs">1 Euro</td>
+                <td class="px-4 py-3 font-bold" id="tbl-eur">302.50 PKR</td>
+                <td class="px-4 py-3 text-xs text-red-500 font-semibold"><i class="fa-solid fa-caret-down"></i> -0.20</td>
+              </tr>
+              <tr>
+                <td class="px-4 py-3 font-semibold">British Pound (GBP)</td>
+                <td class="px-4 py-3 text-xs"><span class="bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 px-2 py-0.5 rounded">Forex</span></td>
+                <td class="px-4 py-3 text-xs">1 GBP</td>
+                <td class="px-4 py-3 font-bold" id="tbl-gbp">358.10 PKR</td>
+                <td class="px-4 py-3 text-xs text-emerald-600 font-semibold"><i class="fa-solid fa-caret-up"></i> +0.40</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: GOLD CALCULATOR -->
+    <div id="content-gold-calc" class="tab-content hidden space-y-6">
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Input Form -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          <div class="flex items-center gap-3 mb-6 pb-3 border-b border-gray-200 dark:border-slate-700">
+            <div class="p-2 bg-amber-100 dark:bg-amber-950 text-amber-600 rounded-lg text-xl">
+              <i class="fa-solid fa-scale-balanced"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-gray-800 dark:text-white">Gold Jewelry Cost Calculator</h2>
+              <p class="text-xs text-gray-500">Calculate custom gold ornament prices with labor/making charges</p>
+            </div>
+          </div>
+
+          <form id="gold-calc-form" onsubmit="event.preventDefault(); calculateGoldPrice();" class="space-y-4">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Weight Unit</label>
+                <select id="gold-unit" onchange="calculateGoldPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+                  <option value="tola" selected>Tola (1 Tola = 11.66g)</option>
+                  <option value="gram">Grams</option>
+                  <option value="masha">Masha (1 Tola = 12 Masha)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Weight Quantity</label>
+                <input type="number" id="gold-weight" step="0.01" value="1" oninput="calculateGoldPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none" placeholder="e.g. 2.5">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Gold Karat (Purity)</label>
+                <select id="gold-karat" onchange="calculateGoldPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+                  <option value="24" selected>24 Karat (99.9% Pure)</option>
+                  <option value="22">22 Karat (Jewelry Standard)</option>
+                  <option value="21">21 Karat</option>
+                  <option value="18">18 Karat</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Current 24K Tola Rate (PKR)</label>
+                <input type="number" id="gold-base-rate" oninput="calculateGoldPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Making Charges (Kari / Labor PKR)</label>
+                <input type="number" id="gold-making" value="3000" oninput="calculateGoldPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none" placeholder="e.g. 3000 per tola">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Making Charge Type</label>
+                <select id="gold-making-type" onchange="calculateGoldPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-amber-500 outline-none">
+                  <option value="pertola" selected>Per Tola Rate</option>
+                  <option value="fixed">Fixed Lump Sum Amount</option>
+                </select>
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Output Summary Card -->
+        <div class="bg-gradient-to-br from-amber-500 to-amber-700 text-white rounded-xl p-6 flex flex-col justify-between shadow-md">
+          <div>
+            <span class="text-xs uppercase font-bold tracking-wider bg-white/20 px-2.5 py-1 rounded-full">Cost Breakdown</span>
+            <div class="mt-6 mb-8">
+              <span class="text-xs text-amber-100 block">Total Estimated Price</span>
+              <div class="text-3xl font-extrabold" id="calc-gold-total">PKR 0</div>
+            </div>
+
+            <div class="space-y-3 text-xs border-t border-white/20 pt-4 text-amber-50">
+              <div class="flex justify-between">
+                <span>Calculated Pure Gold Value:</span>
+                <span class="font-bold" id="calc-gold-net">PKR 0</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Effective Rate / Gram:</span>
+                <span class="font-bold" id="calc-gold-pergram">PKR 0</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Labor / Making Charges:</span>
+                <span class="font-bold" id="calc-gold-labor">PKR 0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 bg-amber-800/40 p-3 rounded-lg text-[11px] leading-relaxed text-amber-100 border border-amber-400/30">
+            <i class="fa-solid fa-circle-info"></i> Note: Sarafa market standard allows extra labor negotiation. Ensure to verify gold purity with an official assay office stamp.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 3: FUEL & TRIP CALCULATOR -->
+    <div id="content-fuel-calc" class="tab-content hidden space-y-6">
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Input Form -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+          <div class="flex items-center gap-3 mb-6 pb-3 border-b border-gray-200 dark:border-slate-700">
+            <div class="p-2 bg-blue-100 dark:bg-blue-950 text-blue-600 rounded-lg text-xl">
+              <i class="fa-solid fa-route"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-gray-800 dark:text-white">Fuel & Trip Expense Calculator</h2>
+              <p class="text-xs text-gray-500">Estimate petrol/diesel cost for city commutes or long highway journeys in Pakistan</p>
+            </div>
+          </div>
+
+          <form id="fuel-calc-form" onsubmit="event.preventDefault(); calculateFuelPrice();" class="space-y-4">
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Fuel Type</label>
+                <select id="fuel-type" onchange="updateFuelRateInput(); calculateFuelPrice();" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+                  <option value="petrol" selected>Super Petrol</option>
+                  <option value="diesel">High-Speed Diesel</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Fuel Price (PKR / Litre)</label>
+                <input type="number" id="fuel-rate" oninput="calculateFuelPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Total Trip Distance (KM)</label>
+                <input type="number" id="fuel-distance" value="250" oninput="calculateFuelPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 350">
+              </div>
+
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Vehicle Mileage (KM per Litre)</label>
+                <input type="number" id="fuel-average" value="14" step="0.5" oninput="calculateFuelPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. 12 or 15">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Number of Passengers (Split Cost)</label>
+                <input type="number" id="fuel-passengers" value="1" min="1" oninput="calculateFuelPrice()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none">
+              </div>
+            </div>
+
+          </form>
+        </div>
+
+        <!-- Result Card -->
+        <div class="bg-gradient-to-br from-blue-600 to-indigo-800 text-white rounded-xl p-6 flex flex-col justify-between shadow-md">
+          <div>
+            <span class="text-xs uppercase font-bold tracking-wider bg-white/20 px-2.5 py-1 rounded-full">Trip Summary</span>
+            <div class="mt-6 mb-8">
+              <span class="text-xs text-blue-100 block">Estimated Fuel Expense</span>
+              <div class="text-3xl font-extrabold" id="calc-fuel-total">PKR 0</div>
+            </div>
+
+            <div class="space-y-3 text-xs border-t border-white/20 pt-4 text-blue-100">
+              <div class="flex justify-between">
+                <span>Required Fuel Quantity:</span>
+                <span class="font-bold" id="calc-fuel-litres">0 Litres</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Cost Per Kilometer:</span>
+                <span class="font-bold" id="calc-fuel-perkm">PKR 0 / KM</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Cost Per Passenger:</span>
+                <span class="font-bold" id="calc-fuel-perperson">PKR 0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 bg-blue-900/40 p-3 rounded-lg text-[11px] leading-relaxed text-blue-100 border border-blue-400/30">
+            <i class="fa-solid fa-car-side"></i> Pro Tip: Maintaining optimal tire pressure and constant speed on Motorways (M-2, M-3, M-5) improves vehicle fuel mileage by up to 15%.
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 4: FOREX CURRENCY CONVERTER -->
+    <div id="content-forex-calc" class="tab-content hidden space-y-6">
+
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 max-w-3xl mx-auto">
+        <div class="flex items-center gap-3 mb-6 pb-3 border-b border-gray-200 dark:border-slate-700">
+          <div class="p-2 bg-emerald-100 dark:bg-emerald-950 text-emerald-600 rounded-lg text-xl">
+            <i class="fa-solid fa-money-bill-transfer"></i>
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-gray-800 dark:text-white">Live Forex PKR Currency Converter</h2>
+            <p class="text-xs text-gray-500">Instant currency conversion based on Pakistan Open Market rates</p>
+          </div>
+        </div>
+
+        <div class="space-y-5">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Amount</label>
+              <input type="number" id="forex-amount" value="100" oninput="convertCurrency()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-3 focus:ring-2 focus:ring-emerald-500 outline-none font-semibold">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Foreign Currency</label>
+              <select id="forex-currency" onchange="convertCurrency()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-3 focus:ring-2 focus:ring-emerald-500 outline-none font-semibold">
+                <option value="USD" selected>USD - US Dollar</option>
+                <option value="SAR">SAR - Saudi Riyal</option>
+                <option value="AED">AED - UAE Dirham</option>
+                <option value="EUR">EUR - Euro</option>
+                <option value="GBP">GBP - British Pound</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="p-6 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/50 rounded-xl text-center">
+            <span class="text-xs font-semibold text-emerald-800 dark:text-emerald-300 block mb-1">Converted Value in Pakistani Rupees</span>
+            <div class="text-3xl font-extrabold text-emerald-700 dark:text-emerald-400" id="forex-result-pkr">PKR 27,860.00</div>
+            <p class="text-xs text-gray-500 mt-2" id="forex-rate-note">1 USD = 278.60 PKR</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 5: SETTINGS / MANUAL RATE OVERRIDE -->
+    <div id="content-settings" class="tab-content hidden space-y-6">
+
+      <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 max-w-3xl mx-auto">
+        <div class="flex items-center justify-between mb-6 pb-3 border-b border-gray-200 dark:border-slate-700">
+          <div class="flex items-center gap-3">
+            <div class="p-2 bg-purple-100 dark:bg-purple-950 text-purple-600 rounded-lg text-xl">
+              <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-gray-800 dark:text-white">Customize Today's Base Rates</h2>
+              <p class="text-xs text-gray-500">Modify daily rates to simulate live market shifts (updates for this session)</p>
+            </div>
+          </div>
+          <button onclick="resetRatesToDefault()" class="text-xs text-red-500 hover:underline font-semibold">
+            Reset Defaults
+          </button>
+        </div>
+
+        <form id="rate-settings-form" onsubmit="event.preventDefault(); saveCustomRates();" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Super Petrol (PKR)</label>
+              <input type="number" id="setting-petrol" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">High-Speed Diesel (PKR)</label>
+              <input type="number" id="setting-diesel" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">24K Gold Tola Rate (PKR)</label>
+              <input type="number" id="setting-gold24" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Silver Tola Rate (PKR)</label>
+              <input type="number" id="setting-silver" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Broiler Chicken Meat / KG (PKR)</label>
+              <input type="number" id="setting-chicken" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Eggs Per Dozen (PKR)</label>
+              <input type="number" id="setting-eggs" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">1 USD to PKR</label>
+              <input type="number" id="setting-usd" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">1 Saudi Riyal (SAR)</label>
+              <input type="number" id="setting-sar" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">1 UAE Dirham (AED)</label>
+              <input type="number" id="setting-aed" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">1 Euro (EUR)</label>
+              <input type="number" id="setting-eur" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">1 British Pound (GBP)</label>
+              <input type="number" id="setting-gbp" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Kerosene / Light Diesel (PKR)</label>
+              <input type="number" id="setting-kerosene" step="0.1" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-sm rounded-lg p-2.5">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full bg-pk hover:bg-pk-dark text-white font-bold py-3 rounded-lg shadow transition mt-4">
+            Save & Update All Cards
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- In-Content Ad Placeholder -->
+    <div class="my-8">
+      <div class="ad-placeholder w-full h-28 border-2 border-dashed border-gray-300 dark:border-slate-700 rounded-xl flex flex-col items-center justify-center text-gray-400 dark:text-slate-500 text-xs text-center p-2">
+        <span class="font-semibold text-gray-500 dark:text-slate-400">ADVERTISEMENT (In-Content Banner Slot)</span>
+        <span>Google AdSense Responsive Unit</span>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Informational Compliance & Legal Disclaimer Footer -->
+  <footer class="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 pt-8 pb-16 text-xs text-gray-600 dark:text-gray-400">
+    <div class="max-w-7xl mx-auto px-4 space-y-6">
+
+      <!-- Informational Article Block -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-gray-50 dark:bg-slate-900/50 p-5 rounded-xl border border-gray-200/80 dark:border-slate-700/80">
+        <div>
+          <h4 class="font-bold text-gray-800 dark:text-white mb-1">Gold & Bullion Pricing</h4>
+          <p class="leading-relaxed">Bullion rates in Pakistan are regulated by the All-Pakistan Sarafa Gems and Jewellers Association (APSGJA). Prices fluctuate based on international bullion markets and local currency exchange valuations.</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-gray-800 dark:text-white mb-1">Petroleum Price Mechanism</h4>
+          <p class="leading-relaxed">Petroleum prices are determined fortnightly by the Oil and Gas Regulatory Authority (OGRA) in alignment with global Brent crude benchmarks and Federal Petroleum Levy adjustments.</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-gray-800 dark:text-white mb-1">Poultry Market Index</h4>
+          <p class="leading-relaxed">Daily chicken meat and farm egg prices are issued by local district administration committees and the Pakistan Poultry Association (PPA) based on supply-demand dynamics.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row items-center justify-between border-t border-gray-100 dark:border-slate-700/80 pt-6 gap-4">
+        <div>
+          <p class="font-semibold text-gray-700 dark:text-gray-300">© 2026 PakDailyRates Utility Portal. All Rights Reserved.</p>
+          <p class="text-[11px] text-gray-400 mt-0.5">Disclaimer: Rates provided are for informational & utility calculation purposes only. Verify official rates with local bazaars before making financial decisions.</p>
+        </div>
+        <div class="flex items-center gap-4 text-xs font-medium">
+          <a href="#" class="hover:underline">Privacy Policy</a>
+          <a href="#" class="hover:underline">Terms of Service</a>
+          <a href="#" class="hover:underline">Disclaimer</a>
+          <a href="#" class="hover:underline">Contact Us</a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- Sticky Bottom Ad Placeholder -->
+  <div id="sticky-ad" class="fixed bottom-0 left-0 right-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 py-1.5 px-4 z-40 flex items-center justify-center shadow-lg">
+    <div class="max-w-4xl w-full flex items-center justify-between text-xs text-gray-400">
+      <span class="hidden sm:inline text-[10px] text-gray-400">ADVERTISEMENT</span>
+      <div class="font-mono text-center w-full sm:w-auto text-gray-500 dark:text-slate-400">
+        Google AdSense Anchor / Sticky Bottom Ad Placeholder (320x50 / 728x90)
+      </div>
+      <button onclick="document.getElementById('sticky-ad').remove()" class="text-gray-400 hover:text-gray-600 px-2 py-0.5 text-xs font-bold">✕</button>
+    </div>
+  </div>
+
+  <!-- Toast Notification System -->
+  <div id="toast-notification" class="fixed top-5 right-5 bg-emerald-600 text-white text-xs px-4 py-3 rounded-lg shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2">
+    <i class="fa-solid fa-circle-check"></i> <span id="toast-message">Rates updated successfully!</span>
+  </div>
+
+  <script>
+    // Initial Default Data Model for Pakistan Rates
+    const defaultRates = {
+      petrol: 279.50,
+      diesel: 285.20,
+      kerosene: 175.00,
+      gold24Tola: 285500,
+      silverTola: 3350,
+      chicken: 495,
+      chickenLive: 340,
+      eggs: 290,
+      usd: 278.60,
+      sar: 74.25,
+      aed: 75.85,
+      eur: 302.50,
+      gbp: 358.10
+    };
+
+    // NOTE: Browser storage (localStorage/sessionStorage) is not used here.
+    // Rate customizations persist only for the current session, in memory.
+    let rates = { ...defaultRates };
+    let isDarkTheme = false;
+
+    function init() {
+      // Display Current Date
+      const options = { year: 'numeric', month: 'short', day: 'numeric' };
+      document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', options);
+
+      // Populate UI
+      updateAllDisplays();
+      populateSettingsInputs();
+
+      // Initial Calculations
+      calculateGoldPrice();
+      updateFuelRateInput();
+      calculateFuelPrice();
+      convertCurrency();
+
+      // Theme initialization
+      initTheme();
+    }
+
+    function switchTab(tabId) {
+      // Hide all content blocks
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      // Reset button states
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-pk', 'text-white', 'shadow-sm');
+        btn.classList.add('bg-white', 'dark:bg-slate-800', 'text-gray-600', 'dark:text-gray-300', 'border');
+      });
+
+      // Show target tab
+      document.getElementById(`content-${tabId}`).classList.remove('hidden');
+
+      // Activate tab button
+      const activeBtn = document.getElementById(`tab-${tabId}`);
+      activeBtn.classList.add('bg-pk', 'text-white', 'shadow-sm');
+      activeBtn.classList.remove('bg-white', 'dark:bg-slate-800', 'text-gray-600', 'dark:text-gray-300', 'border');
+    }
+
+    function updateAllDisplays() {
+      // Header Ticker
+      const ticker = document.getElementById('ticker-content');
+      ticker.innerHTML = `
+        <span><b>USD:</b> PKR ${rates.usd.toFixed(2)}</span>
+        <span>•</span>
+        <span><b>Gold 24K (Tola):</b> PKR ${rates.gold24Tola.toLocaleString()}</span>
+        <span>•</span>
+        <span><b>Petrol:</b> PKR ${rates.petrol.toFixed(2)}</span>
+        <span>•</span>
+        <span><b>Chicken Meat:</b> PKR ${rates.chicken}/kg</span>
+        <span>•</span>
+        <span><b>Saudi Riyal:</b> PKR ${rates.sar.toFixed(2)}</span>
+        <span>•</span>
+        <span><b>Silver:</b> PKR ${rates.silverTola.toLocaleString()}</span>
+      `;
+      // Duplicate for smooth marquee effect
+      ticker.innerHTML += ticker.innerHTML;
+
+      // Cards Data
+      document.getElementById('rate-petrol').innerText = `PKR ${rates.petrol.toFixed(2)}`;
+      document.getElementById('rate-diesel').innerText = `PKR ${rates.diesel.toFixed(2)}`;
+      document.getElementById('rate-kerosene').innerText = `PKR ${rates.kerosene.toFixed(2)}`;
+
+      document.getElementById('rate-gold-24tola').innerText = `PKR ${rates.gold24Tola.toLocaleString()}`;
+      document.getElementById('rate-gold-2410g').innerText = `PKR ${Math.round((rates.gold24Tola / 11.6638) * 10).toLocaleString()}`;
+      document.getElementById('rate-gold-22tola').innerText = `PKR ${Math.round(rates.gold24Tola * (22/24)).toLocaleString()}`;
+
+      document.getElementById('rate-chicken').innerText = `PKR ${rates.chicken}.00`;
+      document.getElementById('rate-chicken-live').innerText = `PKR ${rates.chickenLive}.00`;
+      document.getElementById('rate-eggs').innerText = `PKR ${rates.eggs}.00`;
+
+      document.getElementById('rate-usd').innerText = `PKR ${rates.usd.toFixed(2)}`;
+      document.getElementById('rate-sar').innerText = `PKR ${rates.sar.toFixed(2)}`;
+      document.getElementById('rate-aed').innerText = `PKR ${rates.aed.toFixed(2)}`;
+
+      // Table Data
+      document.getElementById('tbl-gold-tola').innerText = `${rates.gold24Tola.toLocaleString()} PKR`;
+      document.getElementById('tbl-silver-tola').innerText = `${rates.silverTola.toLocaleString()} PKR`;
+      document.getElementById('tbl-eur').innerText = `${rates.eur.toFixed(2)} PKR`;
+      document.getElementById('tbl-gbp').innerText = `${rates.gbp.toFixed(2)} PKR`;
+
+      // Update Calculator Inputs
+      document.getElementById('gold-base-rate').value = rates.gold24Tola;
+      updateFuelRateInput();
+    }
+
+    function calculateGoldPrice() {
+      const unit = document.getElementById('gold-unit').value;
+      const weight = parseFloat(document.getElementById('gold-weight').value) || 0;
+      const karat = parseInt(document.getElementById('gold-karat').value);
+      const base24KTolaRate = parseFloat(document.getElementById('gold-base-rate').value) || rates.gold24Tola;
+      const makingCharges = parseFloat(document.getElementById('gold-making').value) || 0;
+      const makingType = document.getElementById('gold-making-type').value;
+
+      // Normalize weight to Tola
+      let weightInTola = 0;
+      if (unit === 'tola') {
+        weightInTola = weight;
+      } else if (unit === 'gram') {
+        weightInTola = weight / 11.6638;
+      } else if (unit === 'masha') {
+        weightInTola = weight / 12;
+      }
+
+      // Calculate purity factor
+      const purityFactor = karat / 24;
+      const netGoldCost = weightInTola * base24KTolaRate * purityFactor;
+
+      // Calculate Making Charges
+      let totalMaking = 0;
+      if (makingType === 'pertola') {
+        totalMaking = weightInTola * makingCharges;
+      } else {
+        totalMaking = makingCharges;
+      }
+
+      const totalCost = netGoldCost + totalMaking;
+      const gramPrice = (weightInTola * 11.6638) > 0 ? (netGoldCost / (weightInTola * 11.6638)) : 0;
+
+      // Render Outputs
+      document.getElementById('calc-gold-total').innerText = `PKR ${Math.round(totalCost).toLocaleString()}`;
+      document.getElementById('calc-gold-net').innerText = `PKR ${Math.round(netGoldCost).toLocaleString()}`;
+      document.getElementById('calc-gold-pergram').innerText = `PKR ${Math.round(gramPrice).toLocaleString()}`;
+      document.getElementById('calc-gold-labor').innerText = `PKR ${Math.round(totalMaking).toLocaleString()}`;
+    }
+
+    function updateFuelRateInput() {
+      const type = document.getElementById('fuel-type').value;
+      if (type === 'petrol') {
+        document.getElementById('fuel-rate').value = rates.petrol;
+      } else {
+        document.getElementById('fuel-rate').value = rates.diesel;
+      }
+    }
+
+    function calculateFuelPrice() {
+      const fuelRate = parseFloat(document.getElementById('fuel-rate').value) || 0;
+      const distance = parseFloat(document.getElementById('fuel-distance').value) || 0;
+      const average = parseFloat(document.getElementById('fuel-average').value) || 1;
+      const passengers = parseInt(document.getElementById('fuel-passengers').value) || 1;
+
+      const litresRequired = distance / average;
+      const totalCost = litresRequired * fuelRate;
+      const costPerKm = distance > 0 ? totalCost / distance : 0;
+      const costPerPerson = totalCost / passengers;
+
+      document.getElementById('calc-fuel-total').innerText = `PKR ${Math.round(totalCost).toLocaleString()}`;
+      document.getElementById('calc-fuel-litres').innerText = `${litresRequired.toFixed(1)} Litres`;
+      document.getElementById('calc-fuel-perkm').innerText = `PKR ${costPerKm.toFixed(2)} / KM`;
+      document.getElementById('calc-fuel-perperson').innerText = `PKR ${Math.round(costPerPerson).toLocaleString()}`;
+    }
+
+    function convertCurrency() {
+      const amount = parseFloat(document.getElementById('forex-amount').value) || 0;
+      const currency = document.getElementById('forex-currency').value;
+
+      let rate = rates.usd;
+      if (currency === 'SAR') rate = rates.sar;
+      if (currency === 'AED') rate = rates.aed;
+      if (currency === 'EUR') rate = rates.eur;
+      if (currency === 'GBP') rate = rates.gbp;
+
+      const totalPKR = amount * rate;
+      document.getElementById('forex-result-pkr').innerText = `PKR ${totalPKR.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+      document.getElementById('forex-rate-note').innerText = `1 ${currency} = ${rate.toFixed(2)} PKR`;
+    }
+
+    function populateSettingsInputs() {
+      document.getElementById('setting-petrol').value = rates.petrol;
+      document.getElementById('setting-diesel').value = rates.diesel;
+      document.getElementById('setting-kerosene').value = rates.kerosene;
+      document.getElementById('setting-gold24').value = rates.gold24Tola;
+      document.getElementById('setting-silver').value = rates.silverTola;
+      document.getElementById('setting-chicken').value = rates.chicken;
+      document.getElementById('setting-eggs').value = rates.eggs;
+      document.getElementById('setting-usd').value = rates.usd;
+      document.getElementById('setting-sar').value = rates.sar;
+      document.getElementById('setting-aed').value = rates.aed;
+      document.getElementById('setting-eur').value = rates.eur;
+      document.getElementById('setting-gbp').value = rates.gbp;
+    }
+
+    function saveCustomRates() {
+      rates.petrol = parseFloat(document.getElementById('setting-petrol').value) || rates.petrol;
+      rates.diesel = parseFloat(document.getElementById('setting-diesel').value) || rates.diesel;
+      rates.kerosene = parseFloat(document.getElementById('setting-kerosene').value) || rates.kerosene;
+      rates.gold24Tola = parseFloat(document.getElementById('setting-gold24').value) || rates.gold24Tola;
+      rates.silverTola = parseFloat(document.getElementById('setting-silver').value) || rates.silverTola;
+      rates.chicken = parseFloat(document.getElementById('setting-chicken').value) || rates.chicken;
+      rates.eggs = parseFloat(document.getElementById('setting-eggs').value) || rates.eggs;
+      rates.usd = parseFloat(document.getElementById('setting-usd').value) || rates.usd;
+      rates.sar = parseFloat(document.getElementById('setting-sar').value) || rates.sar;
+      rates.aed = parseFloat(document.getElementById('setting-aed').value) || rates.aed;
+      rates.eur = parseFloat(document.getElementById('setting-eur').value) || rates.eur;
+      rates.gbp = parseFloat(document.getElementById('setting-gbp').value) || rates.gbp;
+
+      updateAllDisplays();
+      calculateGoldPrice();
+      calculateFuelPrice();
+      convertCurrency();
+
+      showToast("Market rates updated successfully!");
+      switchTab('dashboard');
+    }
+
+    function resetRatesToDefault() {
+      rates = { ...defaultRates };
+      populateSettingsInputs();
+      updateAllDisplays();
+      calculateGoldPrice();
+      calculateFuelPrice();
+      convertCurrency();
+      showToast("Reset to default benchmark rates");
+    }
+
+    function refreshRatesData() {
+      showToast("Market rates refreshed!");
+      updateAllDisplays();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast-notification');
+      document.getElementById('toast-message').innerText = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+      }, 3000);
+    }
+
+    // Dark/Light Theme Switching (session-only, no browser storage)
+    function initTheme() {
+      const toggleBtn = document.getElementById('theme-toggle');
+
+      // Start from system preference, once, without persisting
+      isDarkTheme = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      applyTheme();
+
+      toggleBtn.addEventListener('click', () => {
+        isDarkTheme = !isDarkTheme;
+        applyTheme();
+      });
+    }
+
+    function applyTheme() {
+      if (isDarkTheme) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+
+    // Initialize application on DOM Ready
+    window.onload = init;
+  </script>
+</body>
+</html>
