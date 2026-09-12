@@ -543,10 +543,27 @@
               <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">Select Foreign Currency</label>
               <select id="forex-currency" onchange="convertCurrency()" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-3 focus:ring-2 focus:ring-emerald-500 outline-none font-semibold">
                 <option value="USD" selected>USD - US Dollar</option>
-                <option value="SAR">SAR - Saudi Riyal</option>
-                <option value="AED">AED - UAE Dirham</option>
                 <option value="EUR">EUR - Euro</option>
                 <option value="GBP">GBP - British Pound</option>
+                <option value="SAR">SAR - Saudi Riyal</option>
+                <option value="AED">AED - UAE Dirham</option>
+                <option value="QAR">QAR - Qatari Riyal</option>
+                <option value="KWD">KWD - Kuwaiti Dinar</option>
+                <option value="OMR">OMR - Omani Rial</option>
+                <option value="BHD">BHD - Bahraini Dinar</option>
+                <option value="AUD">AUD - Australian Dollar</option>
+                <option value="CAD">CAD - Canadian Dollar</option>
+                <option value="CNY">CNY - Chinese Yuan</option>
+                <option value="JPY">JPY - Japanese Yen</option>
+                <option value="INR">INR - Indian Rupee</option>
+                <option value="TRY">TRY - Turkish Lira</option>
+                <option value="THB">THB - Thai Baht</option>
+                <option value="MYR">MYR - Malaysian Ringgit</option>
+                <option value="SGD">SGD - Singapore Dollar</option>
+                <option value="CHF">CHF - Swiss Franc</option>
+                <option value="HKD">HKD - Hong Kong Dollar</option>
+                <option value="NZD">NZD - New Zealand Dollar</option>
+                <option value="ZAR">ZAR - South African Rand</option>
               </select>
             </div>
           </div>
@@ -555,6 +572,16 @@
             <span class="text-xs font-semibold text-emerald-800 dark:text-emerald-300 block mb-1">Converted Value in Pakistani Rupees</span>
             <div class="text-3xl font-extrabold text-emerald-700 dark:text-emerald-400" id="forex-result-pkr">PKR 27,860.00</div>
             <p class="text-xs text-gray-500 mt-2" id="forex-rate-note">1 USD = 278.60 PKR</p>
+          </div>
+
+          <div class="flex items-end gap-2 pt-2 border-t border-gray-100 dark:border-slate-700 mt-2">
+            <div class="flex-grow">
+              <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1" id="forex-edit-label">Update rate: 1 USD = ? PKR</label>
+              <input type="number" id="forex-edit-rate" step="0.01" class="w-full bg-gray-50 dark:bg-slate-700 border border-gray-300 dark:border-slate-600 text-gray-800 dark:text-gray-100 text-sm rounded-lg p-2.5 focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <button onclick="updateSelectedCurrencyRate()" class="px-4 py-2.5 bg-pk hover:bg-pk-dark text-white text-xs font-semibold rounded-lg transition whitespace-nowrap">
+              Update Rate
+            </button>
           </div>
         </div>
       </div>
@@ -729,10 +756,27 @@
       chickenLive: 340,
       eggs: 290,
       usd: 278.60,
-      sar: 74.25,
+      eur: 320.50,
+      gbp: 374.50,
+      sar: 74.05,
       aed: 75.85,
-      eur: 302.50,
-      gbp: 358.10
+      qar: 76.30,
+      kwd: 904.60,
+      omr: 722.30,
+      bhd: 738.60,
+      aud: 195.50,
+      cad: 203.40,
+      cny: 41.15,
+      jpy: 1.88,
+      inr: 3.19,
+      try: 6.77,
+      thb: 8.29,
+      myr: 68.20,
+      sgd: 215.30,
+      chf: 345.00,
+      hkd: 35.60,
+      nzd: 170.40,
+      zar: 15.43
     };
 
     // NOTE: Browser storage (localStorage/sessionStorage) is not used here.
@@ -890,19 +934,44 @@
       document.getElementById('calc-fuel-perperson').innerText = `PKR ${Math.round(costPerPerson).toLocaleString()}`;
     }
 
+    // Map every dropdown currency code to its rates object key
+    const currencyMap = {
+      USD: 'usd', EUR: 'eur', GBP: 'gbp', SAR: 'sar', AED: 'aed',
+      QAR: 'qar', KWD: 'kwd', OMR: 'omr', BHD: 'bhd', AUD: 'aud',
+      CAD: 'cad', CNY: 'cny', JPY: 'jpy', INR: 'inr', TRY: 'try',
+      THB: 'thb', MYR: 'myr', SGD: 'sgd', CHF: 'chf', HKD: 'hkd',
+      NZD: 'nzd', ZAR: 'zar'
+    };
+
     function convertCurrency() {
       const amount = parseFloat(document.getElementById('forex-amount').value) || 0;
       const currency = document.getElementById('forex-currency').value;
-
-      let rate = rates.usd;
-      if (currency === 'SAR') rate = rates.sar;
-      if (currency === 'AED') rate = rates.aed;
-      if (currency === 'EUR') rate = rates.eur;
-      if (currency === 'GBP') rate = rates.gbp;
+      const rateKey = currencyMap[currency] || 'usd';
+      const rate = rates[rateKey];
 
       const totalPKR = amount * rate;
       document.getElementById('forex-result-pkr').innerText = `PKR ${totalPKR.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
       document.getElementById('forex-rate-note').innerText = `1 ${currency} = ${rate.toFixed(2)} PKR`;
+
+      // Keep the inline rate-editor in sync with the selected currency
+      document.getElementById('forex-edit-label').innerText = `Update rate: 1 ${currency} = ? PKR`;
+      document.getElementById('forex-edit-rate').value = rate;
+    }
+
+    function updateSelectedCurrencyRate() {
+      const currency = document.getElementById('forex-currency').value;
+      const rateKey = currencyMap[currency] || 'usd';
+      const newRate = parseFloat(document.getElementById('forex-edit-rate').value);
+
+      if (!newRate || newRate <= 0) {
+        showToast("Please enter a valid rate");
+        return;
+      }
+
+      rates[rateKey] = newRate;
+      convertCurrency();
+      updateAllDisplays();
+      showToast(`${currency} rate updated to PKR ${newRate.toFixed(2)}`);
     }
 
     function populateSettingsInputs() {
